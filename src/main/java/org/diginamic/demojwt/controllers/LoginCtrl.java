@@ -45,7 +45,7 @@ public class LoginCtrl {
 		return this.utilisateurRepository.findByEmail(loginDto.getUsername())
 				.filter(user -> passwordEncoder.matches(loginDto.getPassword(), user.getPassword()))
 				.map(user -> ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, buildJWTCookie(user)).build())
-				.orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
+				.orElseGet(() -> ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, buildJWTCookie()).build());
 	}
 
 	/**
@@ -55,12 +55,32 @@ public class LoginCtrl {
 	 * @return cookie sous la forme d'une chaîne de caractères
 	 */
 	private String buildJWTCookie(Utilisateur user) {
+		
+		long duree = jwtConfig.getExpireIn();
 		Keys.secretKeyFor(SignatureAlgorithm.HS512);
 		String jetonJWT = Jwts.builder().setSubject(user.getEmail()).addClaims(Map.of("roles", user.getRole()))
-				.setExpiration(new Date(System.currentTimeMillis() + jwtConfig.getExpireIn() * 1000))
+				.setExpiration(new Date(System.currentTimeMillis() + duree * 1000))
 				.signWith(jwtConfig.getSecretKey()).compact();
 		ResponseCookie tokenCookie = ResponseCookie.from(jwtConfig.getCookie(), jetonJWT).httpOnly(true)
-				.maxAge(jwtConfig.getExpireIn()).path("/").build();
+				.maxAge(duree).path("/").build();
+		return tokenCookie.toString();
+	}
+	
+	/**
+	 * Construit un cookie d'authentification à partir d'un utilisateur fourni.
+	 *
+	 * @param user utilisateur connecté.
+	 * @return cookie sous la forme d'une chaîne de caractères
+	 */
+	private String buildJWTCookie() {
+		
+		long duree = 0;
+		Keys.secretKeyFor(SignatureAlgorithm.HS512);
+		String jetonJWT = Jwts.builder().setSubject("UNKNOWN").addClaims(Map.of("roles", "NONE"))
+				.setExpiration(new Date(System.currentTimeMillis() + duree * 1000))
+				.signWith(jwtConfig.getSecretKey()).compact();
+		ResponseCookie tokenCookie = ResponseCookie.from(jwtConfig.getCookie(), jetonJWT).httpOnly(true)
+				.maxAge(duree).path("/").build();
 		return tokenCookie.toString();
 	}
 }

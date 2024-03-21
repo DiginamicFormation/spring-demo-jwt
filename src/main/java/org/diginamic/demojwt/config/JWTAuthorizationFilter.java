@@ -23,9 +23,11 @@ import jakarta.servlet.http.HttpServletResponse;
 @Configuration
 public class JWTAuthorizationFilter extends OncePerRequestFilter {
 	private JWTConfig jwtConfig;
+	private JwtUtil jwtUtil;
 
-	public JWTAuthorizationFilter(JWTConfig jwtConfig) {
+	public JWTAuthorizationFilter(JWTConfig jwtConfig, JwtUtil jwtUtil) {
 		this.jwtConfig = jwtConfig;
+		this.jwtUtil = jwtUtil;
 	}
 
 	@Override
@@ -37,13 +39,22 @@ public class JWTAuthorizationFilter extends OncePerRequestFilter {
 					.map(Cookie::getValue).forEach(token -> {
 						Claims body = Jwts.parserBuilder().setSigningKey(jwtConfig.getSecretKey()).build()
 								.parseClaimsJws(token).getBody();
-						String username = body.getSubject();
-						List<String> roles = List.of(body.get("roles", String.class));
-						List<SimpleGrantedAuthority> authorities = roles.stream().map(SimpleGrantedAuthority::new)
-								.collect(Collectors.toList());
-						Authentication authentication = new UsernamePasswordAuthenticationToken(username, null,
-								authorities);
-						SecurityContextHolder.getContext().setAuthentication(authentication);
+						
+						if (jwtUtil.validateToken(token)) {
+							String username = body.getSubject();
+							List<String> roles = List.of(body.get("roles", String.class));
+							List<SimpleGrantedAuthority> authorities = roles.stream().map(SimpleGrantedAuthority::new)
+									.collect(Collectors.toList());
+							Authentication authentication = new UsernamePasswordAuthenticationToken(username, null,
+									authorities);
+							SecurityContextHolder.getContext().setAuthentication(authentication);
+						}
+						else {
+							List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("NONE"));
+							Authentication authentication = new UsernamePasswordAuthenticationToken("UNKNOWN", null,
+									authorities);
+							SecurityContextHolder.getContext().setAuthentication(authentication);
+						}
 					});
 		}
 		chain.doFilter(req, res);
