@@ -31,7 +31,7 @@ public class JWTAuthorizationFilter extends OncePerRequestFilter {
 	@Override
 	protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
 			throws IOException, ServletException {
-		// Recherche du jeton par Cookie
+		
 		if (req.getCookies() != null) {
 			Stream.of(req.getCookies()).filter(cookie -> cookie.getName().equals(jwtConfig.getCookie()))
 					.map(Cookie::getValue).forEach(token -> {

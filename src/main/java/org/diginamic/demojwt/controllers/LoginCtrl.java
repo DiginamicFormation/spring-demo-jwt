@@ -60,7 +60,7 @@ public class LoginCtrl {
 				.setExpiration(new Date(System.currentTimeMillis() + jwtConfig.getExpireIn() * 1000))
 				.signWith(jwtConfig.getSecretKey()).compact();
 		ResponseCookie tokenCookie = ResponseCookie.from(jwtConfig.getCookie(), jetonJWT).httpOnly(true)
-				.maxAge(jwtConfig.getExpireIn() * 1000).path("/").build();
+				.maxAge(jwtConfig.getExpireIn()).path("/").build();
 		return tokenCookie.toString();
 	}
 }
