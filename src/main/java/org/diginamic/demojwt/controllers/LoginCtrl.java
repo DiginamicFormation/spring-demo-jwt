@@ -25,7 +25,7 @@ import io.jsonwebtoken.security.Keys;
 @RestController
 @RequestMapping("/login")
 public class LoginCtrl {
-	// TODO
+
 	private JWTConfig jwtConfig;
 	private UtilisateurRepository utilisateurRepository;
 	private PasswordEncoder passwordEncoder;
@@ -36,6 +36,10 @@ public class LoginCtrl {
 		this.passwordEncoder = new BCryptPasswordEncoder();
 	}
 
+	/** Se connecter avec username : admin@test et password : toto
+	 * @param loginDto
+	 * @return
+	 */
 	@PostMapping
 	public ResponseEntity<?> login(@RequestBody LoginDto loginDto) {
 		return this.utilisateurRepository.findByEmail(loginDto.getUsername())
