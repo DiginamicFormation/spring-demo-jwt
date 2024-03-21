@@ -19,7 +19,7 @@ public class WebSecurityConfig {
 	@Bean
 	public SecurityFilterChain filterChain(HttpSecurity http, JWTAuthorizationFilter jwtFilter) throws Exception {
 		http.authorizeHttpRequests(auth -> auth.requestMatchers(HttpMethod.POST, "login").permitAll().anyRequest().authenticated())
-				.csrf().disable()
+				.csrf(csrf -> csrf.disable())
 				.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
 				// TODO
 				.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
