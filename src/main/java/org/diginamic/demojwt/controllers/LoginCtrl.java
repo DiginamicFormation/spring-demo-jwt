@@ -1,15 +1,11 @@
 package org.diginamic.demojwt.controllers;
 
-import java.util.Date;
-import java.util.Map;
-
-import org.diginamic.demojwt.beans.Utilisateur;
 import org.diginamic.demojwt.config.JWTConfig;
+import org.diginamic.demojwt.config.JwtUtil;
 import org.diginamic.demojwt.dtos.LoginDto;
 import org.diginamic.demojwt.repos.UtilisateurRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,23 +14,18 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
-
 @RestController
 @RequestMapping("/login")
 public class LoginCtrl {
 
+	@Autowired
 	private JWTConfig jwtConfig;
+	@Autowired
+	private JwtUtil jwtUtil;
+	@Autowired
 	private UtilisateurRepository utilisateurRepository;
-	private PasswordEncoder passwordEncoder;
-
-	public LoginCtrl(JWTConfig jwtConfig, UtilisateurRepository activeUserRepository) {
-		this.jwtConfig = jwtConfig;
-		this.utilisateurRepository = activeUserRepository;
-		this.passwordEncoder = new BCryptPasswordEncoder();
-	}
+	
+	private PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
 	/** Se connecter avec username : admin@test et password : toto
 	 * @param loginDto
@@ -44,43 +35,7 @@ public class LoginCtrl {
 	public ResponseEntity<?> login(@RequestBody LoginDto loginDto) {
 		return this.utilisateurRepository.findByEmail(loginDto.getUsername())
 				.filter(user -> passwordEncoder.matches(loginDto.getPassword(), user.getPassword()))
-				.map(user -> ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, buildJWTCookie(user)).build())
-				.orElseGet(() -> ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, buildJWTCookie()).build());
-	}
-
-	/**
-	 * Construit un cookie d'authentification à partir d'un utilisateur fourni.
-	 *
-	 * @param user utilisateur connecté.
-	 * @return cookie sous la forme d'une chaîne de caractères
-	 */
-	private String buildJWTCookie(Utilisateur user) {
-		
-		long duree = jwtConfig.getExpireIn();
-		Keys.secretKeyFor(SignatureAlgorithm.HS512);
-		String jetonJWT = Jwts.builder().setSubject(user.getEmail()).addClaims(Map.of("roles", user.getRole()))
-				.setExpiration(new Date(System.currentTimeMillis() + duree * 1000))
-				.signWith(jwtConfig.getSecretKey()).compact();
-		ResponseCookie tokenCookie = ResponseCookie.from(jwtConfig.getCookie(), jetonJWT).httpOnly(true)
-				.maxAge(duree).path("/").build();
-		return tokenCookie.toString();
-	}
-	
-	/**
-	 * Construit un cookie d'authentification à partir d'un utilisateur fourni.
-	 *
-	 * @param user utilisateur connecté.
-	 * @return cookie sous la forme d'une chaîne de caractères
-	 */
-	private String buildJWTCookie() {
-		
-		long duree = 0;
-		Keys.secretKeyFor(SignatureAlgorithm.HS512);
-		String jetonJWT = Jwts.builder().setSubject("UNKNOWN").addClaims(Map.of("roles", "NONE"))
-				.setExpiration(new Date(System.currentTimeMillis() + duree * 1000))
-				.signWith(jwtConfig.getSecretKey()).compact();
-		ResponseCookie tokenCookie = ResponseCookie.from(jwtConfig.getCookie(), jetonJWT).httpOnly(true)
-				.maxAge(duree).path("/").build();
-		return tokenCookie.toString();
+				.map(user -> ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, jwtUtil.buildJWTCookie(user.getEmail(), user.getRole(), jwtConfig.getExpireIn())).build())
+				.orElseGet(() -> ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, jwtUtil.buildJWTCookie("UNKNOWN", "NONE", 0)).build());
 	}
 }

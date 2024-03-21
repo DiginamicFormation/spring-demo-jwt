@@ -1,20 +1,44 @@
 package org.diginamic.demojwt.config;
 
 import java.util.Date;
+import java.util.Map;
 import java.util.function.Function;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
 
 @Component
 public class JwtUtil {
+	
+	@Autowired
+	private JWTConfig jwtConfig;
 
     @Value("${jwt.secret}")
     private String secret;
 
+    /**
+	 * Construit un cookie d'authentification à partir d'un utilisateur fourni.
+	 *
+	 * @param user utilisateur connecté.
+	 * @return cookie sous la forme d'une chaîne de caractères
+	 */
+	public String buildJWTCookie(String username, String role, long duree) {
+		
+		Keys.secretKeyFor(SignatureAlgorithm.HS512);
+		String jetonJWT = Jwts.builder().setSubject(username).addClaims(Map.of("roles", role))
+				.setExpiration(new Date(System.currentTimeMillis() + duree * 1000))
+				.signWith(jwtConfig.getSecretKey()).compact();
+		ResponseCookie tokenCookie = ResponseCookie.from(jwtConfig.getCookie(), jetonJWT).httpOnly(true)
+				.maxAge(duree).path("/").build();
+		return tokenCookie.toString();
+	}
 
     // Valide le token JWT
     public Boolean validateToken(String token) {
