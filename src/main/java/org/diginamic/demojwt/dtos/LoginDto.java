@@ -1,9 +1,15 @@
 package org.diginamic.demojwt.dtos;
 
+/** Objet de transfert de données de login entre le client et le back.
+ * @author RichardBONNAMY
+ *
+ */
 public class LoginDto {
 
+	/** username */
 	private String username;
 	
+	/** password */
 	private String password;
 
 	/** Getter

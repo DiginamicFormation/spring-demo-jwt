@@ -11,17 +11,31 @@ import org.springframework.context.annotation.Configuration;
 import io.jsonwebtoken.SignatureAlgorithm;
 import jakarta.annotation.PostConstruct;
 
+/**
+ * @author RichardBONNAMY
+ *
+ */
 @Configuration
 public class JWTConfig {
+	
+	/** expireIn */
 	@Value("${jwt.expires_in}")
 	private long expireIn;
+	
+	/** cookie */
 	@Value("${jwt.cookie}")
 	private String cookie;
+	
+	/** secret */
 	@Value("${jwt.secret}")
 	private String secret;
 	
+	/** secretKey */
 	private Key secretKey;
 
+	/**
+	 * Construction du Token.
+	 */
 	@PostConstruct
 	public void buildKey() {
 		secretKey = new SecretKeySpec(Base64.getDecoder().decode(getSecret()), SignatureAlgorithm.HS256.getJcaName());

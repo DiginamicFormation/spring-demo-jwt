@@ -20,11 +20,29 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+/**
+ * Filtre qui contrôle la présence du Token JWT dans la requête HTTP. Si le
+ * token n'est plus valide, les paramètres d'authentification sont positionnés à
+ * UNKNOWN, ce qui invalide tous les accès à l'application.
+ * 
+ * @author RichardBONNAMY
+ *
+ */
 @Configuration
 public class JWTAuthorizationFilter extends OncePerRequestFilter {
+
+	/** Confguration JWT (délai d'expiration, nom du token, clé) */
 	private JWTConfig jwtConfig;
+
+	/** Utilitaire pour construire la clé */
 	private JwtUtil jwtUtil;
 
+	/**
+	 * Constructeur
+	 * 
+	 * @param jwtConfig
+	 * @param jwtUtil
+	 */
 	public JWTAuthorizationFilter(JWTConfig jwtConfig, JwtUtil jwtUtil) {
 		this.jwtConfig = jwtConfig;
 		this.jwtUtil = jwtUtil;
@@ -33,13 +51,17 @@ public class JWTAuthorizationFilter extends OncePerRequestFilter {
 	@Override
 	protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
 			throws IOException, ServletException {
-		
+
 		if (req.getCookies() != null) {
+			// On recherche le cookie nommé AUTH-TOKEN 
 			Stream.of(req.getCookies()).filter(cookie -> cookie.getName().equals(jwtConfig.getCookie()))
-					.map(Cookie::getValue).forEach(token -> {
+					.map(Cookie::getValue)
+					.forEach(token -> {
 						Claims body = Jwts.parserBuilder().setSigningKey(jwtConfig.getSecretKey()).build()
 								.parseClaimsJws(token).getBody();
-						
+
+						// Si le token est valide on active les droits utilisateurs en valorisant le
+						// contexte de sécurité avec le profil de l'utilisateur.
 						if (jwtUtil.validateToken(token)) {
 							String username = body.getSubject();
 							List<String> roles = List.of(body.get("roles", String.class));
@@ -49,6 +71,8 @@ public class JWTAuthorizationFilter extends OncePerRequestFilter {
 									authorities);
 							SecurityContextHolder.getContext().setAuthentication(authentication);
 						}
+						// Si le token est NON valide on désactive les droits utilisateurs en
+						// positionnant dans le contexte de sécurité un profil n'ouvrant aucun droit.
 						else {
 							List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("NONE"));
 							Authentication authentication = new UsernamePasswordAuthenticationToken("UNKNOWN", null,

@@ -11,15 +11,19 @@ import org.springframework.stereotype.Component;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
 
+/**
+ * @author RichardBONNAMY
+ *
+ */
 @Component
 public class JwtUtil {
 	
+	/** jwtConfig */
 	@Autowired
 	private JWTConfig jwtConfig;
 
+    /** secret */
     @Value("${jwt.secret}")
     private String secret;
 
@@ -31,7 +35,6 @@ public class JwtUtil {
 	 */
 	public String buildJWTCookie(String username, String role, long duree) {
 		
-		Keys.secretKeyFor(SignatureAlgorithm.HS512);
 		String jetonJWT = Jwts.builder().setSubject(username).addClaims(Map.of("roles", role))
 				.setExpiration(new Date(System.currentTimeMillis() + duree * 1000))
 				.signWith(jwtConfig.getSecretKey()).compact();
@@ -40,34 +43,46 @@ public class JwtUtil {
 		return tokenCookie.toString();
 	}
 
-    // Valide le token JWT
+    /** contrôle si le token est valide ou non
+     * @param token token
+     * @return boolean
+     */
     public Boolean validateToken(String token) {
         return !isTokenExpired(token);
     }
 
-    // Extrait le nom d'utilisateur du token JWT
-    public String extractUsername(String token) {
-        return extractClaim(token, Claims::getSubject);
-    }
-
-    // Vérifie si le token a expiré
+    /** Vérifie si le token a expiré ou non
+     * @param token token
+     * @return boolean
+     */
     private Boolean isTokenExpired(String token) {
         final Date expiration = extractExpiration(token);
         return expiration.before(new Date());
     }
 
-    // Extrait la date d'expiration du token JWT
+    /** Extraire la date d'expiration du token JWT.
+     * @param token token
+     * @return Date
+     */
     public Date extractExpiration(String token) {
         return extractClaim(token, Claims::getExpiration);
     }
 
-    // Extrait un claim spécifique du token JWT
-    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
+    /**
+     * @param <T>
+     * @param token
+     * @param claimsResolver
+     * @return
+     */
+    private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
 
-    // Extrait tous les claims du token JWT
+    /**
+     * @param token
+     * @return
+     */
     private Claims extractAllClaims(String token) {
         return Jwts.parser().setSigningKey(secret).parseClaimsJws(token).getBody();
     }

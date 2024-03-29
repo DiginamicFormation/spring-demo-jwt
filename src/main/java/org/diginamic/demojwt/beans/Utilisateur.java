@@ -4,21 +4,31 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+/** Entité métier représentant un utilisateur
+ * @author RichardBONNAMY
+ *
+ */
 @Entity
 @Table(name="utilisateur")
 public class Utilisateur {
 
+	/** Identifiant : clé primaire */
 	@Id
 	private Integer id;
 	
+	/** nom */
 	private String nom;
 	
+	/** prénom */
 	private String prenom;
 	
+	/** email */
 	private String email;
 	
+	/** password */
 	private String password;
 	
+	/** Profil de sécurité (USER ou ADMIN) */
 	private String role;
 
 	/** Getter
